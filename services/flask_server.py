@@ -1,6 +1,11 @@
 import os
 from flask import Flask, request, jsonify
 from openai import OpenAI
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)  # This will allow requests from any domain. Adjust as needed for production.
+
 try:
     from credentials import API_KEY
 except:
@@ -11,14 +16,26 @@ app = Flask(__name__)
 client = OpenAI(api_key=API_KEY)
 
 
-@app.route('/generate_code', methods=['POST'])
-def generate_code():
+# API endpoint to retrieve the prompt and pass it to the function
+@app.route('/api/prompt', methods=['POST'])
+def handle_prompt():
     try:
-        # Get JSON payload from the frontend
-        pipeline_config = request.json
+        data = request.json  # Get JSON data from the POST request
+        if not data or 'user_input' not in data:
+            return jsonify({"error": "Missing 'user_input' in request body"}), 400
 
+        generated_code = generate_test_code(data)  # generate prompt for test script
+
+        # Return the result and proposed test method
+        return jsonify({"generated_test_code": generated_code})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def generate_test_code(user_input: dict):
+    try:
         # Generate the prompt for ChatGPT
-        prompt = create_prompt(pipeline_config)
+        prompt = create_prompt(user_input)
 
         # Call the OpenAI API using the new method
         stream = client.chat.completions.create(
@@ -42,25 +59,19 @@ def generate_code():
         return jsonify({"error": str(e)}), 500
 
 
-
 def create_prompt(config):
     """
     Create a natural language prompt for ChatGPT to generate Playwright code.
     """
-    website = config.get("website")
-    button = config.get("button")
-    entry = config.get("entry")
-    expected_result = config.get("expected_result")
+    user_instructions = config.get("user_input")
 
     prompt = f"""
-        Generate a Python script using Playwright that performs the following steps:
-        1. Navigate to the website: {website}.
-        2. Click on the button named: "{button}".
-        3. Enter the text "{entry}" in the search box and submit.
-        4. Verify that the first search result has the title: "{expected_result}".
-
-        The script should include proper assertions and handle any cookie consent banners.
+        Your task is to generate a Python script that uses Playwright library to perform certain test steps on a web application. 
+        The instructions of each step will be written either on a new line or separated by the "." symbol. 
+        The script should include proper assertions and handle any cookie consent banners. Here are the instructions:
         """
+    prompt = prompt + "\n" + user_instructions
+
     return prompt
 
 
