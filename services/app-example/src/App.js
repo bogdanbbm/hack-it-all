@@ -3,8 +3,19 @@ import './App.css';
 import { useState } from 'react';
 
 function App() {
+    window.addEventListener("message", (event) => {
+        if (event.origin !== "http://localhost:4000") return; // Verify sender
+        
+        const loginButton = document.getElementById("button-login");
+        if (loginButton) {
+            loginButton.click();
+        } else {
+            console.error("Login button not found!");
+        }
+    });
+
+
     const [state, setState] = useState('login');
-    const [username, setUsername] = useState('');
     const [cart, setCart] = useState([]);
 
     const handleLogin = () => {
@@ -13,7 +24,6 @@ function App() {
 
         if (username === 'test' && password === 'test') {
             setState('home');
-            setUsername(username);
         } else {
             setState('invalid-login');
 
