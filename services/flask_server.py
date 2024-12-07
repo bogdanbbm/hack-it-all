@@ -1,10 +1,10 @@
 import os
 from flask import Flask, request, jsonify
 from openai import OpenAI
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})# This will allow requests from any domain. Adjust as needed for production.
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 try:
     from credentials import API_KEY
@@ -17,7 +17,8 @@ client = OpenAI(api_key=API_KEY)
 
 
 # API endpoint to retrieve the prompt and pass it to the function
-@app.route('/api/prompt', methods=['POST'])
+@app.route('/api/prompt', methods=['POST', 'OPTIONS'])
+@cross_origin(origin="*", headers=['Content-Type'])
 def handle_prompt():
     try:
         data = request.json  # Get JSON data from the POST request
@@ -32,7 +33,7 @@ def handle_prompt():
         return jsonify({"error": str(e)}), 500
 
 
-def generate_test_code(user_input: dict):
+def generate_test_code(user_input: dict) -> str:
     try:
         # Generate the prompt for ChatGPT
         prompt = create_prompt(user_input)
@@ -49,15 +50,22 @@ def generate_test_code(user_input: dict):
         )
 
         # Collect the response stream
-        generated_code = ""
+        generated_code = []
         for chunk in stream:
-            if chunk.choices[0].delta.content is not None:
-                generated_code += chunk.choices[0].delta.content
+            # Append content from the current chunk to the list
+            content = chunk.choices[0].delta.get("content", "")
+            if content:
+                generated_code.append(content)
 
-        return jsonify({"generated_code": generated_code})
+        # Join all chunks into a single string
+        full_code = "".join(generated_code)
+        print(full_code)
+        # Return the full generated code
+        return full_code
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # Raise the exception to let the calling function handle it
+        raise Exception(f"Error generating test code: {str(e)}")
 
 
 def create_prompt(config):
