@@ -4,7 +4,7 @@ from openai import OpenAI
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # This will allow requests from any domain. Adjust as needed for production.
+CORS(app, resources={r"/*": {"origins": "*"}})# This will allow requests from any domain. Adjust as needed for production.
 
 try:
     from credentials import API_KEY
