@@ -3,13 +3,34 @@ import './App.css';
 import { useState } from 'react';
 
 function App() {
-    // const handleIframeLogin = () => {
-    //     const iframe = document.getElementById("myIframe");
-    //     iframe.contentWindow.postMessage("login", "http://localhost:3000");
-    // };
-
+    
     const [page, setPage] = useState('start');
-    const [siteURL, setSiteURL] = useState('');
+    const [siteURL, setSiteURL] = useState('http://localhost:3000');
+
+    const [prompt, setPrompt] = useState('');
+    const [prompts, setPrompts] = useState([]);
+
+    const [response, setResponse] = useState('');
+    const [responses, setResponses] = useState([]);
+
+    const handleURLChange = () => {
+        const regexURL = new RegExp('^(http|https)://', 'i');
+        if (!regexURL.test(siteURL)) {
+            alert('Invalid URL');
+            return;
+        }
+        setPage('chat');
+    }
+
+    const handleSendPrompt = () => {
+        setPrompts([...prompts, prompt]);
+        setPrompt('');
+
+        // const iframe = document.getElementById("myIframe");
+        // iframe.contentWindow.postMessage("login", "http://localhost:3000");
+    };
+
+    console.log(prompts);
 
     return (
         <>
@@ -18,29 +39,49 @@ function App() {
                     <>
                         <div className="flex flex-col justify-center items-center w-full">
                             <img src='logo.svg' alt='logo' className='w-600 m-10' />
-                            
-                            <div className='text-lg'> 
+
+                            <div className='text-lg'>
                                 Begin by adding an URL
                             </div>
-                            <input type="text" placeholder="Type here" className="input input-bordered w-full max-w-md" />
-                            
+                            <input
+                                type="text"
+                                placeholder="Type here"
+                                className="input input-bordered w-full max-w-md"
+                                value={siteURL}
+                                onChange={(e) => setSiteURL(e.target.value)}
+                            />
+                            <button onClick={() => handleURLChange()} className="btn btn-ghost">Start</button>
                         </div>
                     </>
                 )
             }
-            {/* <div style={{ width: "100%", height: "40vh" }}>
-                <iframe
-                    id="myIframe"
-                    src="http://localhost:3000"
-                    title="TrelloCopy"
-                    width="100%"
-                    height="200%"
-                ></iframe>
-            <button onClick={handleIframeLogin} className="btn btn-primary mt-4">
-                Login in Iframe
-            </button>
-            <input type="text" className="form-control mt-4" placeholder="Enter your name" />
-            </div> */}
+            {
+                page === 'chat' && (
+                    <div style={{ width: "100%", height: "40vh" }}>
+                        <iframe
+                            id="myIframe"
+                            src={siteURL}
+                            title="TrelloCopy"
+                            width="100%"
+                            height="200%"
+                        ></iframe>
+                        <input 
+                            type="text" 
+                            className="form-control mt-4" 
+                            placeholder="prompt" 
+                            onChange={(e) => setPrompt(e.target.value)}
+                        />
+
+                        <button onClick={handleSendPrompt} className="btn btn-primary mt-4">
+                            Send Prompt
+                        </button>
+                        <button className="btn btn-primary mt-4">
+                            Generate Test
+                        </button>
+                    </div>
+                )
+            }
+
         </>
     );
 }
