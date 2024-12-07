@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from openai import OpenAI
 from flask_cors import CORS, cross_origin
 
@@ -21,15 +21,19 @@ client = OpenAI(api_key=API_KEY)
 @cross_origin(origin="*", headers=['Content-Type'])
 def handle_prompt():
     try:
-        data = request.json  # Get JSON data from the POST request
+        # Get JSON data from the POST request
+        data = request.json
         if not data or 'user_input' not in data:
             return jsonify({"error": "Missing 'user_input' in request body"}), 400
 
-        generated_code = generate_test_code(data)  # generate prompt for test script
+        # Generate the test code
+        generated_code = generate_test_code(data)
 
-        # Return the result and proposed test method
-        return jsonify({"generated_test_code": generated_code})
+        # Return the generated code as plain text
+        return Response(generated_code, mimetype='text/plain')
+
     except Exception as e:
+        print(f"Error: {e}")  # Log the error for debugging
         return jsonify({"error": str(e)}), 500
 
 
@@ -50,18 +54,13 @@ def generate_test_code(user_input: dict) -> str:
         )
 
         # Collect the response stream
-        generated_code = []
+        generated_code = ""
         for chunk in stream:
-            # Append content from the current chunk to the list
-            content = chunk.choices[0].delta.get("content", "")
-            if content:
-                generated_code.append(content)
+            if chunk.choices[0].delta.content is not None:
+                generated_code += chunk.choices[0].delta.content
 
-        # Join all chunks into a single string
-        full_code = "".join(generated_code)
-        print(full_code)
-        # Return the full generated code
-        return full_code
+        # Return the raw generated code (string)
+        return generated_code
 
     except Exception as e:
         # Raise the exception to let the calling function handle it

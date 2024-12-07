@@ -37,22 +37,24 @@ function App() {
     };
 
     const handleGenerateTest = () => {
-        const response = fetch('http://127.0.0.1:5000/api/prompt', {
+        fetch('http://127.0.0.1:5000/api/prompt', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                user_input: prompts
-            })
+                user_input: prompts, // Your list of commands
+            }),
         })
-
-        response.then(res => res.json())
-            .then(data => {
-                console.log(data);
+            .then((res) => res.text()) // Read the response as plain text
+            .then((data) => {
+                console.log(data); // Output the full generated code
+                setResponse(data); // Store it for further use
+            })
+            .catch((error) => {
+                console.error('Error:', error);
             });
-
-    }
+    };
 
     console.log(prompts);
 
