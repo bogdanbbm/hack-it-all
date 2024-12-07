@@ -67,8 +67,6 @@ function App() {
         setState('submit');
     }
 
-    console.log(state)
-
     return (
         <>
 
