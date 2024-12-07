@@ -1,6 +1,11 @@
 import os
 from flask import Flask, request, jsonify
 from openai import OpenAI
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)  # This will allow requests from any domain. Adjust as needed for production.
+
 try:
     from credentials import API_KEY
 except:
@@ -11,14 +16,26 @@ app = Flask(__name__)
 client = OpenAI(api_key=API_KEY)
 
 
-@app.route('/generate_code', methods=['POST'])
-def generate_code():
+# API endpoint to retrieve the prompt and pass it to the function
+@app.route('/api/prompt', methods=['POST'])
+def handle_prompt():
     try:
-        # Get JSON payload from the frontend
-        pipeline_config = request.json
+        data = request.json  # Get JSON data from the POST request
+        if not data or 'user_input' not in data:
+            return jsonify({"error": "Missing 'user_input' in request body"}), 400
 
+        generated_code = generate_test_code(data)  # generate prompt for test script
+
+        # Return the result and proposed test method
+        return jsonify({"generated_test_code": generated_code})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def generate_test_code(user_input: dict):
+    try:
         # Generate the prompt for ChatGPT
-        prompt = create_prompt(pipeline_config)
+        prompt = create_prompt(user_input)
 
         # Call the OpenAI API using the new method
         stream = client.chat.completions.create(
@@ -43,7 +60,9 @@ def generate_code():
         return jsonify({"error": str(e)}), 500
 
 
-def create_prompt(input_list):
+def create_prompt(config):
+
+    input_list = config.get("user_input")
     prompt = f"Based on the commands in {input_list}, generate the testing code for our local webpage found at localhost:3000,"\
     """here is an example of how the code should look like:
     import re
