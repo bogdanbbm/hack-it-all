@@ -24,7 +24,8 @@ def generate_code():
         stream = client.chat.completions.create(
             model="gpt-4o-mini",  # Update the model if needed
             messages=[
-                {"role": "system", "content": "You are a helpful assistant for generating Python Playwright scripts."},
+                {"role": "system", "content": """You are a helpful assistant for generating Python Playwright scripts,
+                                        the user should give you the right names for the buttons he wants to test"""},
                 {"role": "user", "content": prompt}
             ],
             stream=True
@@ -42,25 +43,34 @@ def generate_code():
         return jsonify({"error": str(e)}), 500
 
 
+def create_prompt(input_list):
+    prompt = f"Based on the commands in {input_list}, generate the testing code for our local webpage found at localhost:3000,"\
+    """here is an example of how the code should look like:
+    import re
+    from playwright.sync_api import Playwright, sync_playwright, expect
 
-def create_prompt(config):
+    def run(playwright: Playwright) -> None:
+        browser = playwright.chromium.launch(headless=False)
+        context = browser.new_context()
+        page = context.new_page()
+        page.goto("http://localhost:3000/")
+        page.get_by_placeholder("Username").click()
+        page.get_by_placeholder("Username").fill("test")
+        page.get_by_placeholder("Password").click()
+        page.get_by_placeholder("Password").fill("test")
+        page.get_by_role("button", name="Login").click()
+        page.locator("#button-add-shoes1").click()
+        page.get_by_role("button", name="1").click()
+        page.get_by_role("button", name="View cart").click()
+
+        # ---------------------
+        context.close()
+        browser.close()
+
+
+    with sync_playwright() as playwright:
+        run(playwright)
     """
-    Create a natural language prompt for ChatGPT to generate Playwright code.
-    """
-    website = config.get("website")
-    button = config.get("button")
-    entry = config.get("entry")
-    expected_result = config.get("expected_result")
-
-    prompt = f"""
-        Generate a Python script using Playwright that performs the following steps:
-        1. Navigate to the website: {website}.
-        2. Click on the button named: "{button}".
-        3. Enter the text "{entry}" in the search box and submit.
-        4. Verify that the first search result has the title: "{expected_result}".
-
-        The script should include proper assertions and handle any cookie consent banners.
-        """
     return prompt
 
 
