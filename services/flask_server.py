@@ -47,7 +47,7 @@ def generate_test_code(user_input: dict) -> str:
             model="gpt-4o-mini",  # Update the model if needed
             messages=[
                 {"role": "system", "content": """You are a helpful assistant for generating Python Playwright scripts,
-                                        the user should give you the right names for the buttons he wants to test"""},
+                                        the user should give you the scenarios and the html of the site"""},
                 {"role": "user", "content": prompt}
             ],
             stream=True
@@ -68,10 +68,17 @@ def generate_test_code(user_input: dict) -> str:
 
 
 def create_prompt(config):
+    input_list = config.get("user_input", [])
 
-    input_list = config.get("user_input")
-    prompt = f"Based on the commands in {input_list}, generate the testing code for our local webpage found at localhost:3000,"\
-    """here is an example of how the code should look like:
+    if not input_list or not isinstance(input_list, list):
+        return "Invalid input provided. Please provide a valid user_input list."
+
+    # Combine HTML and commands from all inputs
+    combined_html = "\n\n".join([item.get("html", "") for item in input_list])
+    combined_user_prompt = "\n".join([item.get("prompt", "") for item in input_list])
+
+    # Base example for the Playwright script
+    base_example = """
     import re
     from playwright.sync_api import Playwright, sync_playwright, expect
 
@@ -80,24 +87,41 @@ def create_prompt(config):
         context = browser.new_context()
         page = context.new_page()
         page.goto("http://localhost:3000/")
+
+        # Fill username
         page.get_by_placeholder("Username").click()
         page.get_by_placeholder("Username").fill("test")
+
+        # Fill password
         page.get_by_placeholder("Password").click()
         page.get_by_placeholder("Password").fill("test")
+
+        # Click login button
         page.get_by_role("button", name="Login").click()
-        page.locator("#button-add-shoes1").click()
-        page.get_by_role("button", name="1").click()
-        page.get_by_role("button", name="View cart").click()
 
         # ---------------------
         context.close()
         browser.close()
 
-
     with sync_playwright() as playwright:
         run(playwright)
     """
+
+    # Generate a detailed prompt combining all inputs
+    prompt = f"""
+    Based on the combined commands and HTML structures provided, generate a Python Playwright testing code for the local webpage at http://localhost:3000.
+
+    Combined User Commands:
+    {combined_user_prompt}
+
+    Combined HTML Structures:
+    {combined_html}
+
+    The script should follow the example below and adapt the selectors (placeholders, roles, or ids) based on the combined HTML structures provided:
+    {base_example}
+    """
     return prompt
+
 
 
 if __name__ == "__main__":

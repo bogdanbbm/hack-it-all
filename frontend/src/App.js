@@ -91,7 +91,7 @@ function App() {
             });
     };
 
-    console.log(prompts);
+    console.log('prompts', prompts);
 
     return (
         <>
