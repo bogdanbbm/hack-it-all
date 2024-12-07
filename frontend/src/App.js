@@ -22,19 +22,54 @@ function App() {
         setPage('chat');
     }
 
-    const handleSendPrompt = () => {
+    const handleSendPrompt = async () => {
         if (prompt === '') {
             return;
         }
+    
+        const iframe = document.getElementById("myIframe");
+    
+        // Send message to the iframe and wait for the response
+        try {
+            const html = await sendMessageToIframe(iframe);
+            console.log('Processed HTML:', html);
 
-        setPrompts([...prompts, prompt]);
-        setPrompt('');
-        const promptElement = document.getElementById('input-prompt');
-        promptElement.value = '';
-
-        // const iframe = document.getElementById("myIframe");
-        // iframe.contentWindow.postMessage("login", "http://localhost:3000");
+            setPrompts([...prompts, {'prompt': prompt, 'html': html}]);
+            setPrompt('');
+            const promptElement = document.getElementById('input-prompt');
+            promptElement.value = '';
+    
+            // You can process the received HTML here
+        } catch (error) {
+            console.error('Error receiving HTML:', error);
+        }
     };
+    
+    // Helper function to handle iframe communication
+    const sendMessageToIframe = (iframe) => {
+        return new Promise((resolve, reject) => {
+            const messageListener = (event) => {
+                if (event.origin !== "http://localhost:3000") return; // Validate the origin
+                if (event.data.action === 'html-response') {
+                    window.removeEventListener("message", messageListener);
+                    resolve(event.data.html);
+                }
+            };
+    
+            // Add the message event listener
+            window.addEventListener("message", messageListener);
+    
+            // Send the message to the iframe
+            iframe.contentWindow.postMessage({ action: "get-html" }, "http://localhost:3000");
+    
+            // Optional: Add a timeout to reject if no response is received
+            setTimeout(() => {
+                window.removeEventListener("message", messageListener);
+                reject(new Error('Timeout waiting for iframe response'));
+            }, 5000); // Adjust timeout duration as needed
+        });
+    };
+    
 
     const handleGenerateTest = () => {
         fetch('http://127.0.0.1:5000/api/prompt', {
@@ -98,7 +133,7 @@ function App() {
                                                 You
                                             </p>
                                             <p className='font-semibold align-center rounded-lg bg-[#DDDDDD] min-h-10 w-1/2 flex items-center p-2 ml-auto mb-5 mx-1'>
-                                                {prompts[index]}
+                                                {prompts[index].prompt}
                                             </p>
 
                                             {responses[index] &&
