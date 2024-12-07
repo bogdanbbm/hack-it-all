@@ -30,6 +30,24 @@ function App() {
         // iframe.contentWindow.postMessage("login", "http://localhost:3000");
     };
 
+    const handleGenerateTest = () => {
+        const response = fetch('http://127.0.0.1:5000/api/prompt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                prompts: prompts
+            })
+        })
+
+        response.then(res => res.json())
+            .then(data => {
+                console.log(data);
+            });
+    
+    }
+
     console.log(prompts);
 
     return (
@@ -75,7 +93,7 @@ function App() {
                         <button onClick={handleSendPrompt} className="btn btn-primary mt-4">
                             Send Prompt
                         </button>
-                        <button className="btn btn-primary mt-4">
+                        <button onClick={handleGenerateTest} className="btn btn-primary mt-4">
                             Generate Test
                         </button>
                     </div>
