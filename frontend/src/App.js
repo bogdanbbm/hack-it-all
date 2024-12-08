@@ -3,15 +3,42 @@ import './App.css';
 import { useState } from 'react';
 
 function App() {
-
     const [page, setPage] = useState('start');
-    const [siteURL, setSiteURL] = useState('http://localhost:3000');
+    const [siteURL, setSiteURL] = useState('');
 
     const [prompt, setPrompt] = useState('');
     const [prompts, setPrompts] = useState([]);
 
-    const [response, setResponse] = useState('');
     const [responses, setResponses] = useState([]);
+
+    const [generatedTest, setGeneratedTest] = useState('');
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const sendMessageToIframe = (iframe) => {
+        return new Promise((resolve, reject) => {
+            const messageListener = (event) => {
+                if (event.origin !== "http://localhost:3000") return; // Validate the origin
+                if (event.data.action === 'html-response') {
+                    window.removeEventListener("message", messageListener);
+                    resolve(event.data.html);
+                }
+            };
+
+            window.addEventListener("message", messageListener);
+
+            iframe.contentWindow.postMessage({ action: "get-html" }, "http://localhost:3000");
+
+            setTimeout(() => {
+                window.removeEventListener("message", messageListener);
+                reject(new Error('Timeout waiting for iframe response'));
+            }, 5000);
+        });
+    };
+
+    const sendActionToIframe = (iframe, data) => {
+        iframe.contentWindow.postMessage(data, "http://localhost:3000");
+    };
 
     const handleURLChange = () => {
         const regexURL = new RegExp('^(http|https)://', 'i');
@@ -23,55 +50,59 @@ function App() {
     }
 
     const handleSendPrompt = async () => {
-        if (prompt === '') {
+        if (!prompt) {
             return;
         }
     
         const iframe = document.getElementById("myIframe");
-    
-        // Send message to the iframe and wait for the response
+        
+        setIsLoading(true);
+
         try {
             const html = await sendMessageToIframe(iframe);
-            console.log('Processed HTML:', html);
+            setPrompts((prevPrompts) => [...prevPrompts, { prompt, html }]);
+    
+            const userInput = [{ prompt, html }];
+            const response = await fetch('http://127.0.0.1:5000/api/prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_input: userInput }),
+            });
+    
+            const responseText = await response.text();
+            setResponses((prevResponses) => [...prevResponses, responseText]);
+    
+            const convertResponse = await fetch('http://127.0.0.1:5000/api/convert-playwright', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playwright_input: responseText, html_content: html }),
+            });
+    
+            const convertData = await convertResponse.text();
+            const json = JSON.parse('[' + convertData.split('[')[1].split(']')[0] + ']');
 
-            setPrompts([...prompts, {'prompt': prompt, 'html': html}]);
+            setIsLoading(false);
+
+            for (const element of json) {
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        sendActionToIframe(iframe, element);
+                        resolve();
+                    }, 200);
+                });
+            }
+    
+            console.log(json);
             setPrompt('');
-            const promptElement = document.getElementById('input-prompt');
-            promptElement.value = '';
-    
-            // You can process the received HTML here
+            document.getElementById('input-prompt').value = '';
         } catch (error) {
-            console.error('Error receiving HTML:', error);
+            console.error('Error:', error);
         }
-    };
-    
-    // Helper function to handle iframe communication
-    const sendMessageToIframe = (iframe) => {
-        return new Promise((resolve, reject) => {
-            const messageListener = (event) => {
-                if (event.origin !== "http://localhost:3000") return; // Validate the origin
-                if (event.data.action === 'html-response') {
-                    window.removeEventListener("message", messageListener);
-                    resolve(event.data.html);
-                }
-            };
-    
-            // Add the message event listener
-            window.addEventListener("message", messageListener);
-    
-            // Send the message to the iframe
-            iframe.contentWindow.postMessage({ action: "get-html" }, "http://localhost:3000");
-    
-            // Optional: Add a timeout to reject if no response is received
-            setTimeout(() => {
-                window.removeEventListener("message", messageListener);
-                reject(new Error('Timeout waiting for iframe response'));
-            }, 5000); // Adjust timeout duration as needed
-        });
     };
     
 
     const handleGenerateTest = () => {
+        setIsLoading(true);
         fetch('http://127.0.0.1:5000/api/prompt', {
             method: 'POST',
             headers: {
@@ -83,18 +114,26 @@ function App() {
         })
             .then((res) => res.text()) // Read the response as plain text
             .then((data) => {
-                console.log(data); // Output the full generated code
-                setResponse(data); // Store it for further use
+                setGeneratedTest(data.split('```')[1]) // Store it for further use
+                setIsLoading(false);
+                document.getElementById('my_modal_1').showModal()
             })
             .catch((error) => {
                 console.error('Error:', error);
             });
     };
 
-    console.log('prompts', prompts);
-
     return (
         <>
+            {
+                isLoading && (
+                    <span className="absolute loading loading-spinner loading-lg" style={{
+                        top: '50%',
+                        left: '25%',
+                        transform: 'translate(-50%, -50%)',
+                    }}></span>
+                )
+            }
             {
                 page === 'start' && (
                     <div className='w-screen h-screen' style={{ backgroundColor: '#EFEFEF' }}>
@@ -117,7 +156,7 @@ function App() {
                 )
             }
             {
-                page === 'chat' && (
+                (page === 'chat') && (
                     <>
                         <div className='w-screen h-screen' style={{ backgroundColor: '#EFEFEF' }}>
                             <div className='grid grid-cols-2 h-5/6'>
@@ -184,6 +223,21 @@ function App() {
                     </>
                 )
             }
+
+            <dialog id="my_modal_1" className="modal">
+                <div className="modal-box overflow-auto">
+                    <h3 className="font-bold text-lg">Generated test</h3>
+                    <p className="py-4">{generatedTest}</p>
+                    <div className="modal-action">
+                        <form method="dialog">
+                            <button className="btn">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </dialog>
+                    
+                
+            
 
         </>
     );
