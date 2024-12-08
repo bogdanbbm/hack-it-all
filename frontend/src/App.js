@@ -190,12 +190,12 @@ function App() {
                                                     <p className='font-semibold text-left mx-1 text-[#FFA68A]'>
                                                         flawlesstest - Python Code
                                                     </p>
-                                                    <div className='rounded-lg bg-[#FFA68A] min-h-10 w-1/2 p-2 mb-5 mx-1'>
-                                                    <pre className="overflow-auto p-4 bg-gray-900 text-white rounded-lg">
+                                                    <div className='rounded-lg bg-[#FFA68A] min-h-10 w-3/4 mb-5 mx-1'>
+                                                    <pre className="overflow-auto p-4 text-black font-semibold rounded-lg">
                                                     <code>
                                                         {responses[index]
                                                             .replace(/^```python\s*/, '') // Remove starting ```python
-                                                            .replace(/```$/, '')}         // Remove ending ```
+                                                            .replace(/```$/, '')}
                                                     </code>
                                                 </pre>
                                                     </div>
@@ -242,13 +242,15 @@ function App() {
             }
 
             <dialog id="my_modal_1" className="modal">
-                <div className="modal-box overflow-auto">
+                <div className="modal-box" style={{
+                    minWidth: '50vw',
+                }}>
                     <h3 className="font-bold text-lg">Generated test</h3>
-                    <pre className="overflow-auto p-4 bg-gray-900 text-white rounded-lg">
+                    <pre className="p-4 text-black text-semibold rounded-lg">
                         <code>
                             {generatedTest
                                 .replace(/^```python\s*/, '') // Remove starting ```python
-                                .replace(/```$/, '')}         // Remove ending ```
+                                .replace(/```$/, '')}     
                         </code>
                     </pre>
                     <div className="modal-action">

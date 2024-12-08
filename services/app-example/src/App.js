@@ -23,7 +23,7 @@ function App() {
 
     useEffect(() => {
         const handleMessage = (event) => {
-            if (event.origin !== "http://localhost:3001") return;
+            if (event.origin !== "http://localhost:4000") return;
 
             if (event.data.action === 'get-html') {
                 let htmlContent = document.body.innerHTML;
