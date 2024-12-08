@@ -50,6 +50,15 @@ function App() {
 
     const [state, setState] = useState('login');
     const [cart, setCart] = useState([]);
+    const [showCookies, setShowCookies] = useState(false);
+    const [cookiesAccepted, setCookiesAccepted] = useState(false);
+
+    useEffect(() => {
+        if (state === 'home' && showCookies === false) {
+            document.getElementById('my_modal_2').showModal()
+            setShowCookies(true);
+        }
+    }, [state, showCookies]);
 
     const handleLogin = () => {
         const password = document.getElementById('input-password').value;
@@ -68,9 +77,6 @@ function App() {
 
     const handleLogout = () => {
         setState('login');
-    }
-
-    const handleAddCart = (name) => {
     }
 
     const handleRemoveCart = (name) => {
@@ -145,6 +151,16 @@ function App() {
                     <div className="toast toast-top toast-center">
                         <div className="alert alert-error">
                             <span>Wrong password</span>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                (cookiesAccepted === false && state === 'home') && (
+                    <div className="toast toast-top toast-center">
+                        <div className="alert alert-warning">
+                            <span>Cookies rejected!</span>
                         </div>
                     </div>
                 )
@@ -247,7 +263,18 @@ function App() {
                                 </div>
                             </div>
                         </div>
-
+                        <dialog id="my_modal_2" className="modal">
+                        <div className="modal-box">
+                            <h3 className="font-bold text-lg">This site is using Cookies.</h3>
+                            <p className="py-4">Press the button to accept the Cookies policy</p> 
+                            <div className="modal-action">
+                            <form method="dialog">
+                                <button id='button-accept-cookies' onClick={() => setCookiesAccepted(true)} className="btn mr-4">Accept</button>
+                                <button id='button-reject-cookies' onClick={() => setCookiesAccepted(false)} className="btn btn-error">Reject</button>
+                            </form>
+                            </div>
+                        </div>
+                        </dialog>
                     </>
                 )
             }
@@ -372,11 +399,10 @@ function App() {
                                 </div>
                             </div>
                         </div>
-
+                        
                     </>
                 )
             }
-
 
         </>
     );
