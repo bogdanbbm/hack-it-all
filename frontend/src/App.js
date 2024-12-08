@@ -2,6 +2,7 @@ import React from 'react';
 import './App.css';
 import { useState } from 'react';
 
+
 function App() {
     const [page, setPage] = useState('start');
     const [siteURL, setSiteURL] = useState('');
@@ -70,7 +71,10 @@ function App() {
             });
     
             const responseText = await response.text();
-            setResponses((prevResponses) => [...prevResponses, responseText]);
+            setResponses((prevResponses) => [
+                ...prevResponses,
+                typeof responseText === 'string' ? responseText : JSON.stringify(responseText),
+            ]);
     
             const convertResponse = await fetch('http://127.0.0.1:5000/api/convert-playwright', {
                 method: 'POST',
@@ -79,8 +83,15 @@ function App() {
             });
     
             const convertData = await convertResponse.text();
+            try {
+                const json = JSON.parse(convertData.match(/\[.*\]/)[0]);
+                console.log('Parsed JSON:', json);
+            } catch (error) {
+                console.error('Error parsing JSON:', convertData, error);
+            }
             const json = JSON.parse('[' + convertData.split('[')[1].split(']')[0] + ']');
-
+            console.log('responseText:', responseText);
+            console.log('convertData:', convertData);
             setIsLoading(false);
 
             for (const element of json) {
@@ -122,7 +133,7 @@ function App() {
                 console.error('Error:', error);
             });
     };
-
+    console.log('responses', responses[0])
     return (
         <>
             {
@@ -167,7 +178,6 @@ function App() {
                                     </div>
                                     {Array.from({ length: prompts.length }, (_, index) => (
                                         <div key={index}>
-
                                             <p className='font-semibold text-right mx-1 text-[#DDDDDD]'>
                                                 You
                                             </p>
@@ -175,18 +185,25 @@ function App() {
                                                 {prompts[index].prompt}
                                             </p>
 
-                                            {responses[index] &&
+                                            {responses[index] && (
                                                 <>
                                                     <p className='font-semibold text-left mx-1 text-[#FFA68A]'>
-                                                        flawlesstest
+                                                        flawlesstest - Python Code
                                                     </p>
-                                                    <p className='font-semibold rounded-lg bg-[#FFA68A] min-h-10 w-1/2 flex items-center p-2 mb-5 mx-1'>
-                                                        {responses[index]}
-                                                    </p>
+                                                    <div className='rounded-lg bg-[#FFA68A] min-h-10 w-1/2 p-2 mb-5 mx-1'>
+                                                    <pre className="overflow-auto p-4 bg-gray-900 text-white rounded-lg">
+                                                    <code>
+                                                        {responses[index]
+                                                            .replace(/^```python\s*/, '') // Remove starting ```python
+                                                            .replace(/```$/, '')}         // Remove ending ```
+                                                    </code>
+                                                </pre>
+                                                    </div>
                                                 </>
-                                            }
+                                            )}
                                         </div>
                                     ))}
+                                      
                                 </div>
 
                                 <div className="w-full h-full border-l-2 border-b-2 border-[#FF5722]">
@@ -227,7 +244,13 @@ function App() {
             <dialog id="my_modal_1" className="modal">
                 <div className="modal-box overflow-auto">
                     <h3 className="font-bold text-lg">Generated test</h3>
-                    <p className="py-4">{generatedTest}</p>
+                    <pre className="overflow-auto p-4 bg-gray-900 text-white rounded-lg">
+                        <code>
+                            {generatedTest
+                                .replace(/^```python\s*/, '') // Remove starting ```python
+                                .replace(/```$/, '')}         // Remove ending ```
+                        </code>
+                    </pre>
                     <div className="modal-action">
                         <form method="dialog">
                             <button className="btn">Close</button>
