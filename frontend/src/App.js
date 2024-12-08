@@ -161,11 +161,12 @@ function App() {
                                 value={siteURL}
                                 onChange={(e) => setSiteURL(e.target.value)}
                             />
-                            <button onClick={() => handleURLChange()} className="btn btn-ghost">Start</button>
+                            <button onClick={() => handleURLChange()} className="btn btn-ghost mt-2">Start</button>
                         </div>
                     </div>
                 )
             }
+            
             {
                 (page === 'chat') && (
                     <>
