@@ -185,7 +185,9 @@ def create_conversion_prompt(playwright_input: str, html_content: str) -> str:
             page.get_by_placeholder("Password").click()
             page.get_by_placeholder("Password").fill("")
             page.get_by_role("button", name="...").click()
-
+            
+            # Accept/Reject cookies 
+            page.get_by_role(..., name="...").click()
             # ---------------------
             context.close()
             browser.close()
